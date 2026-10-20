@@ -466,3 +466,4 @@ select.needs { border-color: var(--bar-near); border-width: 2px; }
 .toasts { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 1rem + env(safe-area-inset-bottom)); z-index: 60; display: flex; flex-direction: column; gap: .5rem; width: min(92vw, 420px); }
 .toast { background: var(--canopy); color: var(--on-dark); padding: .75rem 1rem; border-radius: 14px; box-shadow: var(--shadow); }
 .toast-error { background: var(--over); color: var(--on-accent); }
+hr.rule { border: 0; border-top: 1px solid var(--line, rgba(0,0,0,.12)); margin: 1.2rem 0; }

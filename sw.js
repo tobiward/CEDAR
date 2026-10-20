@@ -1,6 +1,6 @@
 // Caches CEDAR's own code so it opens fast and installs as an app.
 // Financial data is never cached: Google API requests always go to the network.
-const VERSION = 'cedar-v1.6.4';
+const VERSION = 'cedar-v1.6.5';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/styles.css',
   'js/app.js', 'js/config.js', 'js/util.js', 'js/google.js', 'js/store.js', 'js/categorize.js', 'js/importer.js', 'js/pdfparse.js',

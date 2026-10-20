@@ -1,5 +1,5 @@
 // First run: sign in, then start a household or join one.
-import { esc, toast, $ } from '../util.js';
+import { esc, toast, $, prefs } from '../util.js';
 import { CONFIG, googleKeys, validateKeys } from '../config.js';
 
 const shell = (inner) => `<div class="setup"><div class="setup-card">
@@ -11,7 +11,13 @@ const shell = (inner) => `<div class="setup"><div class="setup-card">
 export function renderSetup(root, ctx, mode) {
   if (mode === 'unconfigured') {
     const k = googleKeys();
-    root.innerHTML = shell(`<p>CEDAR keeps your finances in your own Google account. First, connect your household’s own free Google Cloud project.</p>
+    root.innerHTML = shell(`<form id="invite" class="form keys-form">
+        <label class="field"><span>Joining your partner? Paste their invite link</span><input name="link" autocomplete="off" spellcheck="false" placeholder="https://…?join=…"></label>
+        <p class="form-errors" role="alert"></p>
+        <button class="btn btn-primary btn-wide">Use invite link</button>
+      </form>
+      <hr class="rule">
+      <p>Setting up a new household? CEDAR keeps your finances in your own Google account. First, connect your household’s own free Google Cloud project.</p>
       <p class="muted">Follow the <a href="${CONFIG.GUIDE_URL}" target="_blank" rel="noopener">setup guide</a> (about 15 minutes, once per household). When it asks for an authorized JavaScript origin, use:</p>
       <div class="copy-row"><input id="origin" readonly value="${esc(location.origin)}" aria-label="Your authorized JavaScript origin"><button class="btn" id="copy-origin" type="button">Copy</button></div>
       <form id="keys" class="form keys-form">
@@ -25,6 +31,17 @@ export function renderSetup(root, ctx, mode) {
       <a class="link" href="?demo=1">Try the demo first</a>`);
     $('#copy-origin', root).addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(location.origin); toast('Copied', 'ok'); } catch { $('#origin', root).select(); }
+    });
+    // On iPhone a Home Screen app doesn't share Safari's storage, so the invite is pasted here instead.
+    $('#invite', root).addEventListener('submit', (e) => {
+      e.preventDefault();
+      let q;
+      try { q = new URL(e.target.elements.link.value.trim()).searchParams; } catch { q = new URLSearchParams(); }
+      const keys = { clientId: q.get('cid') || '', apiKey: q.get('key') || '', appId: q.get('app') || '' };
+      if (!q.get('join') || validateKeys(keys).length) { $('.form-errors', e.target).textContent = 'That doesn’t look like a CEDAR invite link. Copy the whole link your partner sent.'; return; }
+      prefs.set('join', q.get('join'));
+      ctx.state.joinId = q.get('join');
+      ctx.saveKeys(keys);
     });
     $('#keys', root).addEventListener('submit', (e) => {
       e.preventDefault();
