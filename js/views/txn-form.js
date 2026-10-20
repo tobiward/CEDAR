@@ -45,7 +45,8 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
     const cat = f.elements.category_id.value;
     if (!pat) return [];
     return ctx.state.data.Transactions.filter((o) => !o.deleted && o.id !== t.id && o.type !== 'transfer'
-      && matchesPattern(o.description, pat) && (o.category_id !== cat || o.type !== f.elements.type.value));
+      && matchesPattern(o.description, pat) && (o.category_id !== cat || o.type !== f.elements.type.value)
+      && (f.elements.type.value !== 'income' || o.amount > 0) && (f.elements.type.value !== 'expense' || o.amount < 0 || o.type === 'expense'));
   };
   const sync = () => {
     const type = f.elements.type.value;

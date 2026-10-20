@@ -10,10 +10,12 @@ const gap = (out, inn) => (parseISO(inn.date) - parseISO(out.date)) / DAY;
 const PAY_WORDS = /\b(PAYMENT|PMT|AUTOPAY|AUTO PAY|THANK YOU)\b/i;
 
 function rules(categories) {
-  const moveCats = new Set(categories.filter((c) => !c.deleted && ['debt payments', 'transfers out'].includes(c.name.toLowerCase())).map((c) => c.id));
-  const looksMove = (t) => t.type === 'transfer' || moveCats.has(t.category_id) || movementKind(t.description) === 'xfer' || PAY_WORDS.test(t.description);
+  const moveCats = new Set(categories.filter((c) => !c.deleted && ['debt payments', 'transfers out', 'cash'].includes(c.name.toLowerCase())).map((c) => c.id));
+  const moveWords = (t) => ['xfer', 'atm'].includes(movementKind(t.description)) || PAY_WORDS.test(t.description);
+  const looksMove = (t) => t.type === 'transfer' || moveCats.has(t.category_id) || moveWords(t);
   const canOut = (t) => t.amount < 0 && (t.type === 'transfer' || (t.type === 'expense' && (!t.category_id || moveCats.has(t.category_id))));
-  const canIn = (t) => t.amount > 0 && (t.type === 'transfer' || (t.type === 'income' && !t.category_id));
+  // Incoming money already given an income category still pairs when its wording is a payment, transfer or ATM deposit.
+  const canIn = (t) => t.amount > 0 && (t.type === 'transfer' || (t.type === 'income' && (!t.category_id || moveWords(t))));
   return { looksMove, canOut, canIn };
 }
 

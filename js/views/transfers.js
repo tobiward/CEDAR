@@ -45,13 +45,20 @@ export function renderTransfers(root, ctx) {
     const c = categorize(t.description, t.amount, { rules, categories: Categories, accounts, accountMap: draft.accountMap });
     if (c.type !== 'transfer') changes.push({ t, c });
   }
+  // Income that isn't: purchases a refund rule turned into income, and card payments received.
+  for (const t of Transactions) {
+    if (t.deleted || t.type !== 'income' || paired.has(t.id) || t.pair_id) continue;
+    const c = categorize(t.description, t.amount, { rules, categories: Categories, accounts, accountMap: draft.accountMap });
+    if (t.amount < 0) changes.push({ t, c: c.type === 'expense' ? c : { type: 'expense', category_id: '' } });
+    else if (c.type === 'transfer') changes.push({ t, c });
+  }
   const groups = new Map();
   for (const { t, c } of changes) {
-    const label = c.type === 'income' ? 'Income (needs a category)' : c.category_id ? ctx.catName(c.category_id) : 'Spending (needs a category)';
+    const label = c.type === 'transfer' ? 'Card payments received (now transfers)' : c.type === 'income' ? 'Income (needs a category)' : c.category_id ? ctx.catName(c.category_id) : 'Spending (needs a category)';
     const g = groups.get(label) || { count: 0, total: 0 };
     g.count++; g.total += Math.abs(t.amount); groups.set(label, g);
   }
-  const stay = transfers.length - changes.length;
+  const stay = transfers.length - changes.filter((x) => x.t.type === 'transfer').length;
   const total = changes.length + pairs.length * 2;
   const acctName = (id) => accounts.find((a) => a.id === id)?.name || 'Account';
 

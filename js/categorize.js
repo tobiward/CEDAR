@@ -85,6 +85,7 @@ const ATM_OUT = /\bATM\b.*\b(WITHDRAWAL|WDL|DEBIT)\b|\b(WITHDRAWAL|WDL)\b.*\bATM
 const DEBT = /\b(LOAN|MORTGAGE|CREDIT CARD|CARD PAYMENT|CARD PMT|AUTOPAY|AUTO PAY|CAPITAL ONE|DISCOVER|AMEX|CHASE CARD|CITI CARD|SYNCHRONY)\b/;
 const LOAN_TYPES = new Set(['car_loan', 'mortgage', 'student_loan', 'personal_loan', 'medical', 'other_debt']);
 const XFER = /\b(TRANSFER|XFER|TRNSFR)\b/;
+const CARD_PAYMENT_IN = /^\s*(PAYMENT|PMT|AUTOPAY|AUTO PAY)\b|\bPAYMENT\s*-?\s*THANK YOU\b/;
 
 // The other account in a transfer, by its last digits: "Xfer To *****4821", "Transfer to Loan 0377".
 export function counterpartDigits(desc) {
@@ -144,7 +145,10 @@ export function categorize(description, amount, { rules = [], categories = [], a
 
   const live = rules.filter((r) => !r.deleted && r.pattern).sort((a, b) => b.pattern.length - a.pattern.length);
   for (const r of live) {
-    if (matches(norm, r.pattern)) return { type: r.type || 'expense', category_id: r.category_id || '', source: 'rule' };
+    if (!matches(norm, r.pattern)) continue;
+    // A rule learned from a refund or deposit (income) mustn't turn purchases at that store into income.
+    if (r.type === 'income' && amount < 0) continue;
+    return { type: r.type || 'expense', category_id: r.category_id || '', source: 'rule' };
   }
 
   if (kind === 'atm') {
@@ -163,6 +167,8 @@ export function categorize(description, amount, { rules = [], categories = [], a
     // No account number to go on (e.g. "PAYMENT THANK YOU" on a card statement): the other side is usually in CEDAR.
     return { type: 'transfer', category_id: '', source: 'starter' };
   }
+  // A card statement's "PAYMENT - THANK YOU" or "PAYMENT - IN BRANCH" is the household paying its own card.
+  if (amount > 0 && CARD_PAYMENT_IN.test(raw)) return { type: 'transfer', category_id: '', source: 'starter' };
   if (amount > 0) {
     if (PAYCHECK.some((p) => matches(norm, p))) {
       const c = byName('Paycheck');
