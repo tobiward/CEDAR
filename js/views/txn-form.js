@@ -1,7 +1,8 @@
 // Add / edit a single transaction.
-import { esc, todayISO, uid, round2, toast, $ } from '../util.js';
+import { esc, todayISO, uid, round2, toast, fmtDate, $ } from '../util.js';
 import { openModal, catOptions, options, busy } from '../ui.js';
 import { merchantKey, movementKind, matchesPattern } from '../categorize.js';
+import { partnerFor, linkPair } from '../pairs.js';
 
 export function openTxnForm(ctx, existing = null, preset = {}) {
   const t = existing || { date: todayISO(), description: '', amount: 0, type: 'expense', category_id: '', account_id: ctx.accounts()[0]?.id || '', note: '', ...preset };
@@ -25,6 +26,8 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
     </div>
     <label class="field"><span>Date</span><input name="date" type="date" required value="${esc(t.date)}"></label>
     <label class="field"><span>Account</span><select name="account_id"><option value="">No account</option>${options(accounts.map((a) => [a.id, a.name]), t.account_id)}</select></label>
+    <label class="field xfer-acct" ${t.type === 'transfer' ? '' : 'hidden'}><span class="xfer-label">${out ? 'Moved to' : 'Moved from'}</span><select name="transfer_account"><option value="">An account not in CEDAR</option>${options(accounts.map((a) => [a.id, a.name]), t.transfer_account)}</select></label>
+    <div class="rule-box pair-box" hidden><p class="pair-text"></p><button type="button" class="btn" id="pair-btn">Make both a transfer</button></div>
     <label class="field"><span>Note (optional)</span><input name="note" value="${esc(t.note)}"></label>
     <div class="form-actions">
       ${existing ? '<button type="button" class="btn btn-danger" id="txn-del">Delete</button>' : ''}
@@ -49,6 +52,9 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
     const desc = f.elements.description.value;
     $('.dir', f).hidden = type !== 'transfer';
     $('.cat-field', f).hidden = type === 'transfer';
+    $('.xfer-acct', f).hidden = type !== 'transfer';
+    $('.xfer-label', f).textContent = f.elements.dir.value === 'in' ? 'Moved from' : 'Moved to';
+    showPair();
     if (!patternEdited) f.elements.pattern.value = merchantKey(desc);
     const show = type !== 'transfer' && !['xfer', 'atm'].includes(movementKind(desc)) && !!f.elements.pattern.value && !!f.elements.category_id.value && f.elements.category_id.value !== origCat;
     $('.rule-box', f).hidden = !show;
@@ -57,6 +63,30 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
       $('.rule-count', f).textContent = n ? `Also updates ${n} other transaction${n === 1 ? '' : 's'} already in CEDAR, and future imports.` : 'Applies to future imports.';
     }
   };
+  // The same amount arriving in (or leaving) another CEDAR account, like a card's "Payment, thank you".
+  let partner = null, pairNow = false;
+  function showPair() {
+    const type = f.elements.type.value;
+    const amt = Math.abs(Number(f.elements.amount.value)) || 0;
+    const isOut = type === 'expense' || (type === 'transfer' && f.elements.dir.value === 'out');
+    const draftT = { ...t, id: t.id || '__new', amount: isOut ? -amt : amt, date: f.elements.date.value, account_id: f.elements.account_id.value, type, category_id: type === 'transfer' ? '' : f.elements.category_id.value, pair_id: '' };
+    const moveLike = type === 'transfer' || !draftT.category_id || ['debt payments', 'transfers out'].includes(ctx.catName(draftT.category_id).toLowerCase());
+    partner = !t.pair_id && amt && moveLike ? partnerFor(draftT, ctx.state.data.Transactions, accounts, ctx.state.data.Categories) : null;
+    const box = $('.pair-box', f);
+    box.hidden = !partner || pairNow;
+    if (partner) $('.pair-text', f).textContent = `${accounts.find((a) => a.id === partner.account_id)?.name || 'Another account'} shows the same amount on ${fmtDate(partner.date)} (“${partner.description.slice(0, 40)}”). If that’s this money arriving, it’s a transfer, not spending, so card purchases aren’t counted twice.`;
+  }
+  $('#pair-btn', f).addEventListener('click', () => {
+    if (!partner) return;
+    pairNow = true;
+    f.elements.type.value = 'transfer';
+    f.elements.dir.value = partner.amount > 0 ? 'out' : 'in';
+    f.elements.transfer_account.value = partner.account_id;
+    sync();
+    toast('Both will be saved as a transfer', 'ok');
+  });
+  ['amount', 'date', 'account_id'].forEach((n) => f.elements[n].addEventListener('change', sync));
+  f.querySelectorAll('input[name=dir]').forEach((r) => r.addEventListener('change', sync));
   f.elements.pattern.addEventListener('input', () => { patternEdited = true; sync(); });
   f.querySelectorAll('input[name=type]').forEach((r) => r.addEventListener('change', () => {
     f.elements.category_id.innerHTML = catOptions(ctx, f.elements.type.value === 'income' ? 'income' : 'expense', '');
@@ -81,6 +111,8 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
       category_id: type === 'transfer' ? '' : f.elements.category_id.value,
       account_id: f.elements.account_id.value,
       note: f.elements.note.value.trim(),
+      transfer_account: type === 'transfer' ? f.elements.transfer_account.value : '',
+      pair_id: type === 'transfer' && f.elements.transfer_account.value === t.transfer_account ? (t.pair_id || '') : '',
       entered_by: t.entered_by || ctx.state.user.email,
       source: t.source || 'manual',
     };
@@ -88,7 +120,16 @@ export function openTxnForm(ctx, existing = null, preset = {}) {
       try {
         const ruleOn = !$('.rule-box', f).hidden && f.elements.rule.checked;
         const also = ruleOn ? others() : [];
-        await ctx.save('Transactions', rec);
+        // Pair with the other side, or let go of an old pair this edit no longer fits.
+        const old = t.pair_id && rec.pair_id !== t.pair_id ? ctx.find('Transactions', t.pair_id) : null;
+        if (pairNow && partner && rec.type === 'transfer') {
+          const [mine, theirs] = linkPair({ ...rec, transfer_account: partner.account_id }, partner);
+          await ctx.updateMany('Transactions', existing ? [mine, theirs] : [theirs]);
+          if (!existing) await ctx.save('Transactions', mine);
+        } else {
+          await ctx.save('Transactions', rec);
+        }
+        if (old) await ctx.save('Transactions', { ...old, pair_id: '', transfer_account: old.transfer_account });
         if (ruleOn) {
           await ctx.learnRule(f.elements.pattern.value.trim().toUpperCase(), rec.category_id, type);
           await ctx.updateMany('Transactions', also.map((o) => ({ ...o, type, category_id: rec.category_id })));

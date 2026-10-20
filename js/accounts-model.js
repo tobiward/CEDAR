@@ -53,11 +53,19 @@ export function currentBalance(a, txns) {
         if (t.deleted || t.amount >= 0 || t.date <= a.balance_date) continue;
         const cd = counterpartDigits(t.description);
         if (cd && (cd === d || d.endsWith(cd) || cd.endsWith(d))) since += -t.amount;
+        else if (t.transfer_account === a.id) since += -t.amount;
       }
+    } else {
+      for (const t of txns) if (!t.deleted && t.amount < 0 && t.transfer_account === a.id && t.date > a.balance_date) since += -t.amount;
     }
     return { value: round2(Math.max(base - since, 0)), since: round2(-since) };
   }
-  for (const t of txns) if (!t.deleted && t.account_id === a.id && t.date > a.balance_date) since += t.amount;
+  for (const t of txns) {
+    if (t.deleted || t.date <= a.balance_date) continue;
+    if (t.account_id === a.id) since += t.amount;
+    // A transfer typed in by hand moves money into this account too; a paired one already has its own row here.
+    else if (t.transfer_account === a.id && t.type === 'transfer' && !t.pair_id) since -= t.amount;
+  }
   since = round2(since);
   return { value: round2(isDebt(a.type) ? base - since : base + since), since };
 }

@@ -11,6 +11,7 @@ import { isDebt } from '../accounts-model.js';
 import { parseCSV, findHeaderRow, guessMapping, mappingIsValid, applyMapping, looksSignFlipped, parseOFX, ofxBalance, isOFX, headerSignature, markDuplicates } from '../importer.js';
 import { categorize, merchantKey, movementKind, matchesPattern } from '../categorize.js';
 import { parseStatementPages, extractPdfPages } from '../pdfparse.js';
+import { findPairs, linkPair } from '../pairs.js';
 
 let imp = null; // import in progress (kept in memory only)
 
@@ -486,8 +487,19 @@ async function save(ctx) {
     return e && { ...e, date: t.date, amount: t.amount, description: t.description, account_id: t.account_id,
       note: (e.note && e.note !== 'Pending' ? e.note : '') || (e.description !== t.description ? e.description : ''), import_id: shot ? '' : importId, external_id: t.external_id || '', source: e.source };
   }).filter(Boolean);
+  // Card payments and moves between accounts: pair the side leaving one account with the side arriving in another.
+  const pairs = findPairs([...ctx.state.data.Transactions, ...rows], ctx.accounts(), ctx.state.data.Categories)
+    .filter((p) => rows.includes(p.out) || rows.includes(p.in));
+  const pairedOld = [];
+  for (const p of pairs) {
+    for (const t of linkPair(p.out, p.in)) {
+      const i = rows.findIndex((r) => r.id === t.id);
+      if (i >= 0) rows[i] = t; else pairedOld.push(t);
+    }
+  }
   try {
     if (rows.length) await ctx.saveMany('Transactions', rows);
+    if (pairedOld.length) await ctx.updateMany('Transactions', pairedOld);
     if (confirmed.length) await ctx.updateMany('Transactions', confirmed);
     for (const [acctId, b] of Object.entries(imp.balances || {})) {
       const a = ctx.find('Accounts', acctId);
@@ -508,7 +520,7 @@ async function save(ctx) {
   const months = new Map();
   [...rows, ...confirmed].forEach((r) => months.set(r.date.slice(0, 7), (months.get(r.date.slice(0, 7)) || 0) + 1));
   const ym = [...months].sort((a, b) => b[1] - a[1])[0][0];
-  toast(`Imported ${rows.length} transactions${confirmed.length ? `, confirmed ${confirmed.length} you’d already logged` : ''}`, 'ok');
+  toast(`Imported ${rows.length} transactions${confirmed.length ? `, confirmed ${confirmed.length} you’d already logged` : ''}${pairs.length ? `, matched ${pairs.length} card payment${pairs.length === 1 ? '' : 's'} or transfer${pairs.length === 1 ? '' : 's'} between your accounts` : ''}`, 'ok');
   imp = null;
   ctx.go(`#/spending/month/${ym}`);
 }

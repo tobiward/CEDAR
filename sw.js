@@ -1,9 +1,9 @@
 // Caches CEDAR's own code so it opens fast and installs as an app.
 // Financial data is never cached: Google API requests always go to the network.
-const VERSION = 'cedar-v1.6.5';
+const VERSION = 'cedar-v1.7.0';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/styles.css',
-  'js/app.js', 'js/config.js', 'js/util.js', 'js/google.js', 'js/store.js', 'js/categorize.js', 'js/importer.js', 'js/pdfparse.js',
+  'js/app.js', 'js/config.js', 'js/util.js', 'js/google.js', 'js/store.js', 'js/categorize.js', 'js/pairs.js', 'js/importer.js', 'js/pdfparse.js',
   'js/periods.js', 'js/reports.js', 'js/ui.js', 'js/demo.js',
   'js/views/home.js', 'js/views/spending.js', 'js/views/add.js', 'js/views/accounts.js', 'js/views/settings.js', 'js/views/setup.js', 'js/views/txn-form.js', 'js/views/transfers.js', 'js/views/subscriptions.js', 'js/look.js', 'js/receipt.js', 'js/screenshot.js', 'js/accounts-model.js', 'js/goals-model.js', 'js/views/goals.js', 'js/lock.js', 'js/views/lock-screen.js', 'js/subs.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.png',

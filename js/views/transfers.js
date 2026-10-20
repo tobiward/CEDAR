@@ -1,9 +1,10 @@
 // One-time re-check of transactions marked as transfers. Only money moving between the household's
 // own CEDAR accounts stays a transfer; cash, payments to people, and payments to outside loans,
 // cards or accounts become spending so "Saved" matches what's really left.
-import { esc, fmtMoney, toast, $, $$ } from '../util.js';
+import { esc, fmtMoney, fmtDate, toast, $, $$ } from '../util.js';
 import { categorize, counterpartDigits, isOwnAccount, movementKind } from '../categorize.js';
 import { options, busy } from '../ui.js';
+import { findPairs, linkPair } from '../pairs.js';
 
 let draft = null; // { accountMap, dropRules: Set }
 
@@ -32,9 +33,15 @@ export function renderTransfers(root, ctx) {
     for (const [d, n] of numbers) draft.accountMap[d] ||= n.debtWords ? 'debt' : n.out && n.in ? 'own' : 'other';
   }
 
+  // Card payments and moves between accounts that show up on both statements: both sides become a transfer.
+  const pairs = findPairs(Transactions, accounts, Categories);
+  const paired = new Set(pairs.flatMap((p) => [p.out.id, p.in.id]));
+  const pairTotal = pairs.reduce((a, p) => a + p.in.amount, 0);
+
   const rules = Rules.filter((r) => !draft.dropRules.has(r.id));
   const changes = [];
   for (const t of transfers) {
+    if (paired.has(t.id) || t.pair_id) continue;
     const c = categorize(t.description, t.amount, { rules, categories: Categories, accounts, accountMap: draft.accountMap });
     if (c.type !== 'transfer') changes.push({ t, c });
   }
@@ -45,12 +52,21 @@ export function renderTransfers(root, ctx) {
     g.count++; g.total += Math.abs(t.amount); groups.set(label, g);
   }
   const stay = transfers.length - changes.length;
+  const total = changes.length + pairs.length * 2;
+  const acctName = (id) => accounts.find((a) => a.id === id)?.name || 'Account';
 
   root.innerHTML = `<div class="page">
     <div class="page-head"><a class="back" href="#/settings" aria-label="Back to Settings">←</a><h1>Re-check transfers</h1></div>
     <section class="card">
       <p>Only money moving between your own CEDAR accounts should be a transfer. Cash withdrawals, payments to people, and payments to loans or cards you don’t import are spending, or “Saved” comes out too high.</p>
     </section>
+    ${pairs.length ? `<section class="card">
+      <h2>Payments between your accounts</h2>
+      <p class="muted">The same amount left one of your accounts and arrived in another, like paying your credit card from checking. The purchases on the card already count as spending, so each pair becomes a transfer instead of counting a second time.</p>
+      <ul class="simple">${pairs.slice(0, 12).map((p) => `<li><span>${esc(acctName(p.out.account_id))} → ${esc(acctName(p.in.account_id))} <span class="muted">· ${esc(fmtDate(p.out.date))}</span></span><span>${fmtMoney(p.in.amount)}</span></li>`).join('')}</ul>
+      ${pairs.length > 12 ? `<p class="muted">and ${pairs.length - 12} more</p>` : ''}
+      <p class="muted">${pairs.length} pair${pairs.length === 1 ? '' : 's'} · ${fmtMoney(pairTotal)} no longer counted twice</p>
+    </section>` : ''}
     ${numbers.size ? `<section class="card form">
       <h2>Which accounts are these?</h2>
       <p class="muted">Your transfers went to or came from these account numbers, which aren’t in CEDAR.</p>
@@ -64,9 +80,9 @@ export function renderTransfers(root, ctx) {
     </section>` : ''}
     <section class="card">
       <h2>What will change</h2>
-      ${changes.length ? `<ul class="simple">${[...groups].sort((a, b) => b[1].total - a[1].total).map(([label, g]) => `<li><span>${esc(label)} <span class="muted">· ${g.count}</span></span><span>${fmtMoney(g.total)}</span></li>`).join('')}</ul>` : '<p class="muted">Nothing to change.</p>'}
+      ${changes.length || pairs.length ? `<ul class="simple">${pairs.length ? `<li><span>Transfers between your accounts <span class="muted">· ${pairs.length * 2}</span></span><span>${fmtMoney(pairTotal)}</span></li>` : ''}${[...groups].sort((a, b) => b[1].total - a[1].total).map(([label, g]) => `<li><span>${esc(label)} <span class="muted">· ${g.count}</span></span><span>${fmtMoney(g.total)}</span></li>`).join('')}</ul>` : '<p class="muted">Nothing to change.</p>'}
       <p class="muted">${stay} transaction${stay === 1 ? '' : 's'} stay transfers between your own accounts.</p>
-      <div class="form-actions"><a class="btn" href="#/settings">Cancel</a><button class="btn btn-primary" id="apply" ${changes.length || numbers.size ? '' : 'disabled'}>Apply ${changes.length} change${changes.length === 1 ? '' : 's'}</button></div>
+      <div class="form-actions"><a class="btn" href="#/settings">Cancel</a><button class="btn btn-primary" id="apply" ${total || numbers.size ? '' : 'disabled'}>Apply ${total} change${total === 1 ? '' : 's'}</button></div>
     </section>
   </div>`;
 
@@ -79,10 +95,10 @@ export function renderTransfers(root, ctx) {
     try {
       await ctx.setSetting('account_map', draft.accountMap);
       await ctx.removeMany('Rules', transferRules.filter((r) => draft.dropRules.has(r.id)));
-      await ctx.updateMany('Transactions', changes.map(({ t, c }) => ({ ...t, type: c.type, category_id: c.category_id })));
+      await ctx.updateMany('Transactions', [...changes.map(({ t, c }) => ({ ...t, type: c.type, category_id: c.category_id })), ...pairs.flatMap((p) => linkPair(p.out, p.in))]);
       await ctx.setSetting('transfers_checked', true);
       const needs = changes.filter(({ c }) => !c.category_id).length;
-      toast(`Updated ${changes.length} transactions${needs ? `; ${needs} need a category` : ''}`, 'ok');
+      toast(`Updated ${total} transactions${needs ? `; ${needs} need a category` : ''}`, 'ok');
       draft = null;
       ctx.go(needs ? '#/spending/transactions?needs=1' : '#/home');
     } catch (err) { ctx.handleError(err); }

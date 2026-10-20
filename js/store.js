@@ -4,7 +4,7 @@ import { api, fileVersion } from './google.js';
 
 export const SCHEMA = {
   // source: 'statement', 'receipt' or 'manual' (blank on older rows: statement if import_id is set).
-  Transactions: ['id', 'date', 'description', 'amount', 'type', 'category_id', 'account_id', 'note', 'entered_by', 'import_id', 'external_id', 'updated_at', 'deleted', 'source'],
+  Transactions: ['id', 'date', 'description', 'amount', 'type', 'category_id', 'account_id', 'note', 'entered_by', 'import_id', 'external_id', 'updated_at', 'deleted', 'source', 'transfer_account', 'pair_id'],
   Categories: ['id', 'name', 'kind', 'monthly_budget', 'sort', 'archived', 'updated_at', 'deleted'],
   // balance is as of balance_date (a statement's closing date, or when entered by hand).
   // rate: APR for debts, APY for savings (percent). payment: monthly payment on a debt.
