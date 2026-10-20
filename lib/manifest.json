@@ -1,0 +1,78 @@
+{
+  "pdfjs/pdf.min.mjs": {
+    "package": "pdfjs-dist@4.10.38",
+    "sha384": "+0ti2moQlmLN7WZHE2RHIf5lV8hHxhxEalN0il3YZceG26fUPyOkR0hp9daxk1i7"
+  },
+  "pdfjs/pdf.worker.min.mjs": {
+    "package": "pdfjs-dist@4.10.38",
+    "sha384": "ToeVvShCxKc6CEvhHeMt0Q8A06pSPDbAlngO9nokrDmh914gk/pYd0N7D0a4Lz2o"
+  },
+  "pdfjs/LICENSE": {
+    "package": "pdfjs-dist@4.10.38",
+    "sha384": "dIfJx5IERVwWkDwmUITjq6FFmOOiUluv24tT2o6vrjEpXyjYGE/BIj5rw25rSNr0"
+  },
+  "tesseract/tesseract.min.js": {
+    "package": "tesseract.js@5.1.1",
+    "sha384": "GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F"
+  },
+  "tesseract/worker.min.js": {
+    "package": "tesseract.js@5.1.1",
+    "sha384": "zxn+VqofFzXpH99dUb3fa4ywoSBQJPy6/6oEaJHPlblZXr53a0g1Jl6720vgSzB7"
+  },
+  "tesseract/LICENSE.md": {
+    "package": "tesseract.js@5.1.1",
+    "sha384": "blLHPbhEzMhbFqhLL0ObAPojW2VbmJiRcofyz7TeJrcNgV73VVTAmRA4szJFu+B5"
+  },
+  "tesseract/core/tesseract-core-lstm.wasm.js": {
+    "package": "tesseract.js-core@5.1.1",
+    "sha384": "EKWY5JDwphQoyxhvYU7eaCcyQ0EdV6fZK3L2vzfZcv2ichRdNd6pSnyWPNv6fMuR"
+  },
+  "tesseract/core/tesseract-core-simd-lstm.wasm.js": {
+    "package": "tesseract.js-core@5.1.1",
+    "sha384": "YM1G+zaWYy9VSRP2C101LCgzh7n3Hqb6OEm9qDoZYgCADsni3nnECskC3WialQB7"
+  },
+  "tesseract/core/LICENSE": {
+    "package": "tesseract.js-core@5.1.1",
+    "sha384": "HzQXqscuy26vWaM3g6T9a2KCggp/Ln7XUf8hlV9wrRqAGOYtROlr9P0JP+MpNNCc"
+  },
+  "tesseract/lang/eng.traineddata.gz": {
+    "package": "@tesseract.js-data/eng@1.0.0",
+    "sha384": "JI+fraGAoc5GBGIliuqzHRnP1nJyrukg5ggNSBv/TO+YOVj+6Te6XXQOx7ia10xq"
+  },
+  "fonts/zilla-slab-latin-500-normal.woff2": {
+    "package": "@fontsource/zilla-slab@5.3.0",
+    "sha384": "FVdtCBC2HnmaYcG7U1KM+jrVmOiZxfR1ZmDpqLkGLY0EOyeOVetQQp4sD3ZBI1cD"
+  },
+  "fonts/zilla-slab-latin-600-normal.woff2": {
+    "package": "@fontsource/zilla-slab@5.3.0",
+    "sha384": "ynwHK6tpmboG95v6ZjrAFoviuwlj2YXX13+wcBm62CGXpT3jH/NHJQScZhg/FsiV"
+  },
+  "fonts/zilla-slab-latin-700-normal.woff2": {
+    "package": "@fontsource/zilla-slab@5.3.0",
+    "sha384": "spwHoDnJxIQ34/ZUeNtYOuMtdlg0i/AKA6rdQZscTYh8POo+8VHHuhoEVCfOJdt+"
+  },
+  "fonts/LICENSE-zilla-slab": {
+    "package": "@fontsource/zilla-slab@5.3.0",
+    "sha384": "yQXdSvqX4qv4dzkfswywemNJB3bQK34FdZUomnZU+Lj5TBRQZrQGkbEurUVdF06Q"
+  },
+  "fonts/figtree-latin-400-normal.woff2": {
+    "package": "@fontsource/figtree@5.3.0",
+    "sha384": "C3hEkPIMja8zotmN8HmBTfxznRkGrGFYXyR7QEaH1+J62JNbtsCrkjwlDFvyzB+d"
+  },
+  "fonts/figtree-latin-500-normal.woff2": {
+    "package": "@fontsource/figtree@5.3.0",
+    "sha384": "kSNJ7Io5oQVGUjlsPQcEPE0n/9tZ8oCUx9DDW/X5skDpIS55vZGqfsnc58zUf7Kj"
+  },
+  "fonts/figtree-latin-600-normal.woff2": {
+    "package": "@fontsource/figtree@5.3.0",
+    "sha384": "ncZJLtB6Oe6DaseGlUmarXrf1ecEDGxKQaWaq9pYGU/JJNcBNe2cw6RSbpvkjVqR"
+  },
+  "fonts/figtree-latin-700-normal.woff2": {
+    "package": "@fontsource/figtree@5.3.0",
+    "sha384": "zqUV1/VU8sk6nUZvDaMPdsvQ2ws/OAlMO1BYRvLd1R+OyLThI5CaNjCle1wCCVUy"
+  },
+  "fonts/LICENSE-figtree": {
+    "package": "@fontsource/figtree@5.3.0",
+    "sha384": "+9gZCYvIPerYWzyHkfe/9rFY4aXnuqUIxHXl7LXLVna5bl1WrFZ8eZlc+JVIrgG0"
+  }
+}

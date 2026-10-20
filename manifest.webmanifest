@@ -1,0 +1,15 @@
+{
+  "name": "CEDAR",
+  "short_name": "CEDAR",
+  "description": "Capital, Expenses, Debt, Assets & Returns. A free, open-source household finance app.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF1EB",
+  "theme_color": "#1F3A2B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
