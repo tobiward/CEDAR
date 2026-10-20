@@ -18,7 +18,10 @@ function loadScript(src) {
   scripts[src] ||= new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = src; s.async = true; s.onload = resolve;
-    s.onerror = () => reject(new Error('Could not load ' + src));
+    s.onerror = () => {
+      delete scripts[src]; s.remove(); // let the next tap try again
+      reject(new Error('Couldn’t reach Google sign-in. An ad or tracker blocker, strict tracking prevention, or a network filter is probably blocking accounts.google.com. Allow it for this site and try again.'));
+    };
     document.head.appendChild(s);
   });
   return scripts[src];

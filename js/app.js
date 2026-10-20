@@ -23,7 +23,7 @@ const emptyTables = () => Object.fromEntries(TABLES.map((t) => [t, []]));
 const state = {
   locked: isLockOn(),
   store: null, data: emptyTables(), issues: [], user: null, version: null,
-  ready: false, setup: null, demo: params.has('demo'), joinId: params.get('join'),
+  ready: false, setup: null, demo: params.has('demo'), joinId: params.get('join') || prefs.get('join', null),
   writes: 0, staleUI: false, sessionExpired: false, title: '',
 };
 
@@ -265,6 +265,7 @@ async function createHousehold() {
     await store.append('Categories', DEFAULT_CATEGORIES.map(([name, kind], i) => ({ id: uid(), name, kind, monthly_budget: 0, sort: i, archived: false, updated_at: stamp, deleted: false })));
     await store.append('Settings', [{ key: 'created', value: JSON.stringify(stamp), updated_at: stamp }]);
     prefs.set('sheet', store.id);
+    prefs.remove('join'); state.joinId = null;
     await openStore(store);
     location.hash = '#/spending/budget';
     toast('Household created. Start by setting a few monthly budgets.', 'ok');
@@ -281,6 +282,7 @@ async function joinHousehold(presetId) {
       if (!confirm('That sheet doesn’t look like a CEDAR household yet. Use it anyway?')) return;
     }
     prefs.set('sheet', id);
+    prefs.remove('join');
     state.joinId = null;
     await openStore(store);
     toast('Connected to your household', 'ok');
@@ -297,6 +299,8 @@ async function boot() {
     return openStore(new MemoryStore(demoTables()));
   }
   // An invite link carries the household's Google Cloud keys so the partner doesn't type them.
+  // The household to join is remembered too, so installing CEDAR before finishing the join doesn't lose it.
+  if (params.get('join')) prefs.set('join', params.get('join'));
   if (params.has('cid')) {
     const keys = { clientId: params.get('cid') || '', apiKey: params.get('key') || '', appId: params.get('app') || '' };
     if (!validateKeys(keys).length && keys.clientId !== googleKeys().clientId) { signOut(); saveGoogleKeys(keys); }

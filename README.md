@@ -1,6 +1,6 @@
 # CEDAR
 
-**Capital, Expenses, Debt, Assets & Returns** — a free, open-source household finance app.
+**Capital, Expenses, Debt, Assets & Returns** — a free, open-source household finance app by Tobi Ward.
 
 Import a monthly bank statement and CEDAR sorts it into spending categories, rolls each month into the year, and compares both against your budget. Each household connects its own free Google Cloud project, and partners sign in on their own devices to share one database: a Google Sheet that you own.
 
